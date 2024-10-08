@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package transaction_service;
+
+option csharp_namespace = "Gateway";
+
+import "Protos/shared.proto";
+
+service TransactionService {
+  rpc TransferCurrency (TransferData) returns (TransferResult);
+  rpc DepositCurrency (DepositData) returns (DepositResult);
+  rpc WithdrawCurrency (WithdrawData) returns (WithdrawResult);
+  rpc GetHistory (GetHistoryOptions) returns (TransactionsHistory);
+  rpc CancelTransaction (CancelTransactionOptions) returns (CancelTransactionResult);
+}
+
+message TransferData {
+  shared.Currency currency = 1;
+  int32 amount = 2;
+  string src_card_code = 3;
+  string dst_card_code = 4;
+}
+
+message TransferResult {
+  shared.ServiceError error = 1;
+}
+
+message DepositData {
+  shared.Currency currency = 1;
+  int32 amount = 2;
+  string card_code = 3;
+}
+
+message DepositResult {
+  shared.ServiceError error = 1;
+}
+
+message WithdrawData {
+  shared.Currency currency = 1;
+  int32 amount = 2;
+  string card_code = 3;
+}
+
+message WithdrawResult {
+  shared.ServiceError error = 1;
+}
+
+message GetHistoryOptions {
+  string card_code = 1;
+  int32 month = 2;
+  int32 year = 3;
+}
+
+enum TransactionType {
+  DEPOSIT = 0;
+  WITHDRAW = 1;
+  TRANSFER = 2;
+}
+
+message Transaction {
+  string transaction_id = 1;
+  TransactionType type = 2;
+  string src_card_code = 3;
+  string dst_card_code = 4;
+  int32 amount = 5;
+  string date = 6;
+}
+
+message TransactionsHistory {
+  repeated Transaction transactions = 1;
+  shared.ServiceError error = 2;
+}
+
+message CancelTransactionOptions {
+  string transaction_id = 1;
+}
+
+message CancelTransactionResult {
+  shared.ServiceError error = 1;
+}

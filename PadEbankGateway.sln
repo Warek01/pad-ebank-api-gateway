@@ -1,0 +1,18 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gateway", "Gateway.csproj", "{FC5D5AD6-5C43-4987-8A31-03A538E24B1A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3EFAE3DE-BF00-4A2E-8C0B-A9AC467FCE66}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FC5D5AD6-5C43-4987-8A31-03A538E24B1A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC5D5AD6-5C43-4987-8A31-03A538E24B1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC5D5AD6-5C43-4987-8A31-03A538E24B1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC5D5AD6-5C43-4987-8A31-03A538E24B1A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
