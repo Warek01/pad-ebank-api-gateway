@@ -10,128 +10,125 @@ namespace Gateway.Controllers;
 [ApiVersion(1)]
 [Route("/Api/v{v:apiVersion}/[controller]")]
 public class AccountController(
-  AccountServiceLoadBalancer loadBalancer,
-  ILogger<AccountController> logger
+   AccountServiceLoadBalancer loadBalancer,
+   ILogger<AccountController> logger
 ) : ControllerBase {
-  [HttpPost("Register")]
-  public async Task<ActionResult> Register(RegisterCredentials credentials) {
-    ServiceWrapper<AccountServiceClient> service = await loadBalancer.GetServiceAsync();
+   [HttpPost("Register")]
+   public async Task<ActionResult> Register(RegisterCredentials credentials) {
+      try {
+         ServiceWrapper<AccountServiceClient> service = await loadBalancer.GetServiceAsync();
 
-    try {
-      AuthResult result = await service.CircuitBreaker.Execute<AuthResult>(
-        async () => await service.Client.RegisterAsync(credentials)
-      );
+         logger.LogInformation($"Load balancer gave {service.InstanceDto}");
+
+         AuthResult result = await service.CircuitBreaker.Execute<AuthResult>(
+            async (cts) => await service.Client.RegisterAsync(credentials, cancellationToken: cts)
+         );
+
+         if (result.Error is not null) {
+            return ThrowAccountServiceError(result.Error);
+         }
+
+         return Ok(result.Credentials);
+      }
+      catch (CircuitOpenException) {
+         return await Register(credentials);
+      }
+   }
+
+   [HttpPost("Login")]
+   public async Task<ActionResult> Login(LoginCredentials credentials) {
+      var service = await loadBalancer.GetServiceAsync();
+      AuthResult result = await service.Client.LoginAsync(credentials);
 
       if (result.Error is not null) {
-        return ThrowAccountServiceError(result.Error);
+         return ThrowAccountServiceError(result.Error);
       }
 
       return Ok(result.Credentials);
-    }
-    catch (CircuitOpenException) {
-      logger.LogError($"Circuit opened for {service.InstanceDto}");
-      return await Register(credentials);
-    }
-    catch (ServiceUnavailableException ex) {
-      logger.LogError($"Service unavailable {ex.Message}");
-      return StatusCode(503, ex.Message);
-    }
-  }
+   }
 
-  [HttpPost("Login")]
-  public async Task<ActionResult> Login(LoginCredentials credentials) {
-    var service = await loadBalancer.GetServiceAsync();
-    AuthResult result = await service.Client.LoginAsync(credentials);
+   [HttpPost("Profile")]
+   public async Task<ActionResult> GetProfile(GetProfileOptions options) {
+      var service = await loadBalancer.GetServiceAsync();
+      GetProfileResult result = await service.Client.GetProfileAsync(options);
 
-    if (result.Error is not null) {
-      return ThrowAccountServiceError(result.Error);
-    }
+      if (result.Error is not null) {
+         return ThrowAccountServiceError(result.Error);
+      }
 
-    return Ok(result.Credentials);
-  }
+      return Ok(result.Profile);
+   }
 
-  [HttpPost("Profile")]
-  public async Task<ActionResult> GetProfile(GetProfileOptions options) {
-    var service = await loadBalancer.GetServiceAsync();
-    GetProfileResult result = await service.Client.GetProfileAsync(options);
+   [HttpPost("Currency/Add")]
+   public async Task<ActionResult> AddCurrency(AddCurrencyOptions options) {
+      var service = await loadBalancer.GetServiceAsync();
+      AddCurrencyResult? result = await service.Client.AddCurrencyAsync(options);
 
-    if (result.Error is not null) {
-      return ThrowAccountServiceError(result.Error);
-    }
+      if (result.Error is not null) {
+         return ThrowAccountServiceError(result.Error);
+      }
 
-    return Ok(result.Profile);
-  }
+      return Ok();
+   }
 
-  [HttpPost("Currency/Add")]
-  public async Task<ActionResult> AddCurrency(AddCurrencyOptions options) {
-    var service = await loadBalancer.GetServiceAsync();
-    AddCurrencyResult? result = await service.Client.AddCurrencyAsync(options);
+   [HttpPost("Currency/Change")]
+   public async Task<ActionResult> ChangeCurrency(ChangeCurrencyOptions options) {
+      var service = await loadBalancer.GetServiceAsync();
+      ChangeCurrencyResult? result = await service.Client.ChangeCurrencyAsync(options);
 
-    if (result.Error is not null) {
-      return ThrowAccountServiceError(result.Error);
-    }
+      if (result.Error is not null) {
+         return ThrowAccountServiceError(result.Error);
+      }
 
-    return Ok();
-  }
+      return Ok();
+   }
 
-  [HttpPost("Currency/Change")]
-  public async Task<ActionResult> ChangeCurrency(ChangeCurrencyOptions options) {
-    var service = await loadBalancer.GetServiceAsync();
-    ChangeCurrencyResult? result = await service.Client.ChangeCurrencyAsync(options);
+   [HttpPost("Transaction/Validate")]
+   public async Task<ActionResult> CanPerformTransaction(TransactionData data) {
+      var service = await loadBalancer.GetServiceAsync();
+      CanPerformTransactionResult? result = await service.Client.CanPerformTransactionAsync(data);
 
-    if (result.Error is not null) {
-      return ThrowAccountServiceError(result.Error);
-    }
+      if (result.Error is not null) {
+         return ThrowAccountServiceError(result.Error);
+      }
 
-    return Ok();
-  }
+      return Ok();
+   }
 
-  [HttpPost("Transaction/Validate")]
-  public async Task<ActionResult> CanPerformTransaction(TransactionData data) {
-    var service = await loadBalancer.GetServiceAsync();
-    CanPerformTransactionResult? result = await service.Client.CanPerformTransactionAsync(data);
+   [HttpPost("Card/Block")]
+   public async Task<ActionResult> BlockCard(CardIdentifier cardIdentifier) {
+      var service = await loadBalancer.GetServiceAsync();
+      BlockCardResult? result = await service.Client.BlockCardAsync(cardIdentifier);
 
-    if (result.Error is not null) {
-      return ThrowAccountServiceError(result.Error);
-    }
+      if (result.Error is not null) {
+         return ThrowAccountServiceError(result.Error);
+      }
 
-    return Ok();
-  }
+      return Ok();
+   }
 
-  [HttpPost("Card/Block")]
-  public async Task<ActionResult> BlockCard(CardIdentifier cardIdentifier) {
-    var service = await loadBalancer.GetServiceAsync();
-    BlockCardResult? result = await service.Client.BlockCardAsync(cardIdentifier);
+   [HttpPost("Card/Unblock")]
+   public async Task<ActionResult> UnblockCard(CardIdentifier cardIdentifier) {
+      var service = await loadBalancer.GetServiceAsync();
+      UnblockCardResult? result = await service.Client.UnblockCardAsync(cardIdentifier);
 
-    if (result.Error is not null) {
-      return ThrowAccountServiceError(result.Error);
-    }
+      if (result.Error is not null) {
+         return ThrowAccountServiceError(result.Error);
+      }
 
-    return Ok();
-  }
+      return Ok();
+   }
 
-  [HttpPost("Card/Unblock")]
-  public async Task<ActionResult> UnblockCard(CardIdentifier cardIdentifier) {
-    var service = await loadBalancer.GetServiceAsync();
-    UnblockCardResult? result = await service.Client.UnblockCardAsync(cardIdentifier);
+   private ActionResult ThrowAccountServiceError(ServiceError error) {
+      ServiceErrorCode code = error.Code;
+      string message = error.Message;
 
-    if (result.Error is not null) {
-      return ThrowAccountServiceError(result.Error);
-    }
-
-    return Ok();
-  }
-
-  private ActionResult ThrowAccountServiceError(ServiceError error) {
-    ServiceErrorCode code = error.Code;
-    string message = error.Message;
-
-    return code switch {
-      ServiceErrorCode.Conflict => Conflict(message),
-      ServiceErrorCode.BadRequest => BadRequest(message),
-      ServiceErrorCode.NotFound => NotFound(message),
-      ServiceErrorCode.Unauthorized => Unauthorized(message),
-      _ => StatusCode(500, error),
-    };
-  }
+      return code switch {
+         ServiceErrorCode.Conflict => Conflict(message),
+         ServiceErrorCode.BadRequest => BadRequest(message),
+         ServiceErrorCode.NotFound => NotFound(message),
+         ServiceErrorCode.Unauthorized => Unauthorized(message),
+         _ => StatusCode(500, error),
+      };
+   }
 }

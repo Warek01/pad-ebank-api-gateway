@@ -1,94 +1,105 @@
-using Gateway.Dtos.Request;
 using Gateway.Exceptions;
+using Grpc.Core;
 using Serilog;
 
 namespace Gateway.Models;
 
-public class CircuitBreaker(ServiceInstanceDto instance) {
-  private enum CircuitState {
-    Closed,
-    Open,
-    HalfOpen,
-  }
+public class CircuitBreaker<TService>(
+   ServiceWrapper<TService> service,
+   LoadBalancer<TService> loadBalancer
+) where TService : ClientBase {
+   private enum CircuitState {
+      Closed,
+      Open,
+      HalfOpen,
+   }
 
-  private const int FailureThreshold = 3;
-  private readonly TimeSpan _retryDelay = TimeSpan.FromSeconds(1);
+   private readonly bool _removeOnOpen =
+      bool.Parse(Environment.GetEnvironmentVariable("CIRCUIT_BREAKER_REMOVE_ON_OPEN")!);
 
-  private readonly TimeSpan _closedTimeout = TimeSpan.FromSeconds(10);
-  // private readonly TimeSpan _halfOpenTimeout = TimeSpan.FromSeconds(10);
-  // private readonly TimeSpan _halfOpenAllowRequestInterval = TimeSpan.FromSeconds(1);
+   private const int FailureThreshold = 3;
+   private readonly TimeSpan _retryDelay = TimeSpan.FromSeconds(3);
+   private readonly TimeSpan _timeoutDelay = TimeSpan.FromSeconds(5);
+   private readonly TimeSpan _openTimeout = TimeSpan.FromSeconds(30);
 
-  private int _failureCount = 0;
+   private int _failureCount = 0;
+   private DateTime _lastFailureTime = DateTime.MinValue;
+   private CircuitState _state = CircuitState.Closed;
 
-  private DateTime _lastFailureTime = DateTime.MinValue;
+   public async Task<TResult> Execute<TResult>(Func<CancellationToken, Task<TResult>> action) {
+      var actionCts = new CancellationTokenSource();
+      var timeoutCts = new CancellationTokenSource();
 
-  // private DateTime _lastSuccessTime = DateTime.MinValue;
-  private CircuitState _state = CircuitState.Closed;
+      try {
+         Task<TResult> resultTask = action(actionCts.Token);
+         Task timeoutTask = Task.Delay(_timeoutDelay, timeoutCts.Token);
+         Task completedFirst = await Task.WhenAny(resultTask, timeoutTask);
 
-  /// <returns>Return value of action</returns>
-  /// <exception cref="CircuitOpenException"></exception>
-  public async Task<T> Execute<T>(Func<Task<T>> action) {
-    try {
-      T result = await action();
-      ExecuteSuccess();
-      return result;
-    }
-    catch (Exception ex) {
-      ExecuteFailure();
-      Log.Logger.Error(ex.ToString());
+         if (completedFirst == timeoutTask) {
+            await actionCts.CancelAsync();
+            throw new TimeoutException();
+         }
 
-      if (!CanPerform()) {
-        RemoveInstance();
-        throw new CircuitOpenException(string.Empty);
+         await timeoutCts.CancelAsync();
+         TResult res = await resultTask;
+         ExecuteSuccess();
+
+         return res;
+      }
+      catch (Exception ex) {
+         ExecuteFailure();
+         Log.Logger.Error(ex.Message);
+
+         if (!CanPerform()) {
+            if (_removeOnOpen) {
+               await RemoveInstance();
+            }
+
+            throw new CircuitOpenException(string.Empty);
+         }
+
+         await Task.Delay(_retryDelay);
+         return await Execute<TResult>(action);
+      }
+      finally {
+         await actionCts.CancelAsync();
+         await timeoutCts.CancelAsync();
+         actionCts.Dispose();
+         timeoutCts.Dispose();
+      }
+   }
+
+   private void ExecuteSuccess() {
+      _failureCount = 0;
+      _state = CircuitState.Closed;
+   }
+
+   private void ExecuteFailure() {
+      Log.Error($"Execute failure for {service.InstanceDto}, {FailureThreshold - _failureCount} retries remaining");
+      _failureCount++;
+      _lastFailureTime = DateTime.Now;
+
+      if (_failureCount >= FailureThreshold) {
+         Log.Error($"Circuit opened for {service.InstanceDto}");
+         _state = CircuitState.Open;
+      }
+   }
+
+   private async Task RemoveInstance() {
+      await loadBalancer.RemoveServiceAsync(service);
+      Log.Logger.Information($"Removed service instance {service.InstanceDto}");
+   }
+
+   public bool CanPerform() {
+      DateTime now = DateTime.Now;
+
+      // half-open after _closedTimeout if opened
+      if (_state == CircuitState.Open && now - _lastFailureTime >= _openTimeout) {
+         _state = CircuitState.HalfOpen;
+         Log.Logger.Information($"Circuit breaker is half-opened for {service.InstanceDto}");
+         _failureCount = FailureThreshold - 1;
       }
 
-      await Task.Delay(_retryDelay);
-      return await Execute<T>(action);
-    }
-  }
-
-  private void ExecuteSuccess() {
-    _failureCount = 0;
-    // _lastSuccessTime = DateTime.Now;
-    _state = CircuitState.Closed;
-  }
-
-  private void ExecuteFailure() {
-    Log.Error($"Execute failure for {instance}, {FailureThreshold - _failureCount} retries remaining");
-    _failureCount++;
-    _lastFailureTime = DateTime.Now;
-
-    if (_failureCount >= FailureThreshold) {
-      Log.Error($"Circuit opened for {instance}");
-      _state = CircuitState.Open;
-    }
-  }
-
-  private void RemoveInstance() {
-    // TODO: implement
-  }
-
-  public bool CanPerform() {
-    DateTime now = DateTime.Now;
-
-    // TODO: implement half-opened logic
-
-    // don't allow if too many requests are made during half-open
-    // if (_state == CircuitState.HalfOpen && now - _lastSuccessTime < _halfOpenAllowRequestInterval) {
-    //   return false;
-    // }
-
-    // half-open after _closedTimeout if opened
-    if (_state == CircuitState.Open && now - _lastFailureTime >= _closedTimeout) {
-      _state = CircuitState.HalfOpen;
-      Log.Logger.Information($"Circuit breaker is half-opened for {instance}");
-    }
-
-    // close after _closedTimeout if half-opened
-    // if (_state == CircuitState.HalfOpen && now - _lastFailureTime >= _halfOpenTimeout) {
-    //   ChangeState(CircuitState.Closed);
-    // }
-
-    return _state != CircuitState.Open;
-  }
+      return _state != CircuitState.Open;
+   }
 }

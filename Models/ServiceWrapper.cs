@@ -9,21 +9,21 @@ namespace Gateway.Models;
 /// </summary>
 /// <typeparam name="T">gRPC client type</typeparam>
 public class ServiceWrapper<T> : IAsyncDisposable where T : ClientBase {
-  public readonly T Client;
-  public readonly GrpcChannel Channel;
-  public readonly CircuitBreaker CircuitBreaker;
-  public readonly ServiceInstanceDto InstanceDto;
+   public readonly T Client;
+   public readonly GrpcChannel Channel;
+   public readonly CircuitBreaker<T> CircuitBreaker;
+   public readonly ServiceInstanceDto InstanceDto;
 
-  public ServiceWrapper(ServiceInstanceDto instance) {
-    Channel = GrpcChannel.ForAddress(instance.Url());
-    Client = (T)Activator.CreateInstance(typeof(T), Channel)!;
-    CircuitBreaker = new CircuitBreaker(instance);
-    InstanceDto = instance;
-  }
+   public ServiceWrapper(ServiceInstanceDto instance, LoadBalancer<T> loadBalancer) {
+      Channel = GrpcChannel.ForAddress(instance.Url());
+      Client = (T)Activator.CreateInstance(typeof(T), Channel)!;
+      CircuitBreaker = new CircuitBreaker<T>(this, loadBalancer);
+      InstanceDto = instance;
+   }
 
-  public async ValueTask DisposeAsync() {
-    await Channel.ShutdownAsync();
-    Channel.Dispose();
-    GC.SuppressFinalize(this);
-  }
+   public async ValueTask DisposeAsync() {
+      await Channel.ShutdownAsync();
+      Channel.Dispose();
+      GC.SuppressFinalize(this);
+   }
 }

@@ -6,35 +6,33 @@ using Microsoft.Extensions.Options;
 namespace Gateway.Services;
 
 public class ServiceDiscoveryService(
-  IHttpClientFactory httpClientFactory,
-  IOptions<JsonOptions> jsonOptions
+   IHttpClientFactory httpClientFactory,
+   IOptions<JsonOptions> jsonOptions
 ) {
-  private readonly HttpClient _httpClient = httpClientFactory.CreateClient();
-  private readonly string _baseUrl = Environment.GetEnvironmentVariable("SERVICE_DISCOVERY_URL")!;
+   private static readonly string BaseUrl = Environment.GetEnvironmentVariable("SERVICE_DISCOVERY_URL")!;
 
-  public async Task<List<ServiceInstanceDto>> GetInstanceUrls(string serviceName) {
-    HttpResponseMessage res = await _httpClient.GetAsync($"{_baseUrl}/Api/v1/Registry/{serviceName}");
-    res.EnsureSuccessStatusCode();
+   private readonly HttpClient _httpClient = httpClientFactory.CreateClient();
 
-    await using Stream contentStream = await res.Content.ReadAsStreamAsync();
+   public async Task RemoveInstance(string host) {
+      await _httpClient.DeleteAsync($"{BaseUrl}/Api/v1/Registry/{host}");
+   }
 
-    var list = await JsonSerializer.DeserializeAsync<List<ServiceInstanceDto>>(
-      contentStream,
-      jsonOptions.Value.SerializerOptions
-    );
+   public async Task<List<ServiceInstanceDto>> GetInstanceUrls(string serviceName) {
+      HttpResponseMessage res = await _httpClient.GetAsync($"{BaseUrl}/Api/v1/Registry/{serviceName}");
+      res.EnsureSuccessStatusCode();
 
-    return list!;
-  }
+      await using Stream contentStream = await res.Content.ReadAsStreamAsync();
 
-  // public async Task<List<InstanceDto>> GetAllInstancesUrls() {
-  //   HttpResponseMessage res = await _httpClient.GetAsync($"{_baseUrl}/Api/v1/Registry/");
-  //   res.EnsureSuccessStatusCode();
-  //
-  //   return await JsonSerializer.DeserializeAsync<List<string>>(await res.Content.ReadAsStreamAsync()) ?? [];
-  // }
+      var list = await JsonSerializer.DeserializeAsync<List<ServiceInstanceDto>>(
+         contentStream,
+         jsonOptions.Value.SerializerOptions
+      );
 
-  public async Task ShutdownService(string serviceUrl) {
-    HttpResponseMessage res = await _httpClient.DeleteAsync($"{_baseUrl}/Api/v1/Registry/{serviceUrl}");
-    res.EnsureSuccessStatusCode();
-  }
+      return list!;
+   }
+
+   public async Task ShutdownService(string serviceUrl) {
+      HttpResponseMessage res = await _httpClient.DeleteAsync($"{BaseUrl}/Api/v1/Registry/{serviceUrl}");
+      res.EnsureSuccessStatusCode();
+   }
 }
