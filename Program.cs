@@ -30,6 +30,7 @@ builder.Services.AddApiVersioning(options => {
 builder.Services.AddSerilog();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ServiceUnavailableExceptionHandler>();
+builder.Services.AddHealthChecks();
 LoadServices();
 SetupRedis();
 
@@ -41,6 +42,7 @@ app.UseSwaggerUI(options => { options.DocumentTitle = "Gateway"; });
 app.UseAuthorization();
 app.UseDefaultFiles();
 app.UseStaticFiles();
+app.MapHealthChecks("/Healthz");
 app.MapControllers();
 
 Run();
