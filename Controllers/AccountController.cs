@@ -118,6 +118,13 @@ public class AccountController(
 
       return Ok();
    }
+   
+   [HttpGet("Lobby")]
+   public async Task<ActionResult<string>> AccountLobby() {
+      ServiceWrapper<AccountServiceClient> service = await loadBalancer.GetServiceAsync();
+      return $"ws://{service.InstanceDto.Host}:3200/account";
+   }
+
 
    private ActionResult ThrowAccountServiceError(ServiceError error) {
       ServiceErrorCode code = error.Code;
