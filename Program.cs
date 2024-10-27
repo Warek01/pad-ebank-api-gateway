@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using Gateway.ExceptionHandlers;
 using Gateway.Services;
+using Microsoft.OpenApi.Models;
 using Serilog;
 using StackExchange.Redis;
 
@@ -8,7 +9,6 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.WebHost.UseKestrel();
 
-// Global concrete logger implementation
 Log.Logger = new LoggerConfiguration()
    .ReadFrom.Configuration(builder.Configuration)
    .Enrich.FromLogContext()
@@ -16,7 +16,16 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options => {
+   options.SwaggerDoc("v1", new OpenApiInfo {
+      Title = "PAD API Gateway",
+      Version = "v1",
+   });
+   options.EnableAnnotations();
+
+   var filePath = Path.Combine(AppContext.BaseDirectory, "Gateway.xml");
+   options.IncludeXmlComments(filePath);
+});
 builder.Services.AddHttpClient();
 builder.Services.AddApiVersioning(options => {
    options.ReportApiVersions = true;
@@ -38,7 +47,7 @@ WebApplication app = builder.Build();
 
 app.UseSerilogRequestLogging();
 app.UseSwagger();
-app.UseSwaggerUI(options => { options.DocumentTitle = "Gateway"; });
+app.UseSwaggerUI();
 app.UseAuthorization();
 app.UseDefaultFiles();
 app.UseStaticFiles();

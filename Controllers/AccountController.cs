@@ -4,16 +4,24 @@ using Gateway.Helpers;
 using Gateway.Models;
 using Gateway.Services;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Gateway.Controllers;
 
 [ApiController]
 [ApiVersion(1)]
 [Route("/Api/v{v:apiVersion}/[controller]")]
+[SwaggerResponse(StatusCodes.Status429TooManyRequests)]
+[SwaggerResponse(StatusCodes.Status500InternalServerError)]
+[SwaggerTag("Account resource (bound to Account microservice)")]
 public class AccountController(
    AccountServiceLoadBalancer loadBalancer,
    ILogger<AccountController> logger
 ) : ControllerBase {
+   [SwaggerOperation("Register a user", "Register a user with the register credentials")]
+   [SwaggerResponse(StatusCodes.Status201Created, "Register successful", typeof(AuthCredentials))]
+   [SwaggerResponse(StatusCodes.Status400BadRequest, "Schema validation error")]
+   [SwaggerResponse(StatusCodes.Status409Conflict, "User already exists")]
    [HttpPost("Register")]
    public async Task<ActionResult> Register(RegisterCredentials credentials) {
       try {
@@ -36,6 +44,10 @@ public class AccountController(
       }
    }
 
+   [SwaggerResponse(StatusCodes.Status200OK, "Login successful", typeof(AuthCredentials))]
+   [SwaggerResponse(StatusCodes.Status400BadRequest, "Schema validation error")]
+   [SwaggerResponse(StatusCodes.Status401Unauthorized, "Wrong password")]
+   [SwaggerResponse(StatusCodes.Status404NotFound, "User not found")]
    [HttpPost("Login")]
    public async Task<ActionResult> Login(LoginCredentials credentials) {
       try {
@@ -58,6 +70,10 @@ public class AccountController(
       }
    }
 
+   [SwaggerOperation("Get profile of a user")]
+   [SwaggerResponse(StatusCodes.Status200OK, "Profile response", typeof(Profile))]
+   [SwaggerResponse(StatusCodes.Status400BadRequest, "Schema validation error")]
+   [SwaggerResponse(StatusCodes.Status404NotFound, "User not found")]
    [HttpPost("Profile")]
    public async Task<ActionResult> GetProfile(GetProfileOptions options) {
       try {
@@ -80,6 +96,10 @@ public class AccountController(
       }
    }
 
+   [SwaggerOperation("Add money to card")]
+   [SwaggerResponse(StatusCodes.Status200OK, "Operation successful")]
+   [SwaggerResponse(StatusCodes.Status400BadRequest, "Schema validation error")]
+   [SwaggerResponse(StatusCodes.Status404NotFound, "User not found")]
    [HttpPost("Currency/Add")]
    public async Task<ActionResult> AddCurrency(AddCurrencyOptions options) {
       try {
@@ -102,6 +122,10 @@ public class AccountController(
       }
    }
 
+   [SwaggerOperation("Change the currency type on a card (EUR, USD, MDL)")]
+   [SwaggerResponse(StatusCodes.Status200OK, "Operation successful")]
+   [SwaggerResponse(StatusCodes.Status400BadRequest, "Schema validation error")]
+   [SwaggerResponse(StatusCodes.Status404NotFound, "User not found")]
    [HttpPost("Currency/Change")]
    public async Task<ActionResult> ChangeCurrency(ChangeCurrencyOptions options) {
       try {
@@ -124,6 +148,10 @@ public class AccountController(
       }
    }
 
+   [SwaggerOperation("Check if the given card can perform a transaction (has enough money)")]
+   [SwaggerResponse(StatusCodes.Status200OK, "Operation successful")]
+   [SwaggerResponse(StatusCodes.Status400BadRequest, "Schema validation error")]
+   [SwaggerResponse(StatusCodes.Status404NotFound, "User not found")]
    [HttpPost("Transaction/Validate")]
    public async Task<ActionResult> CanPerformTransaction(TransactionData data) {
       try {
@@ -146,6 +174,10 @@ public class AccountController(
       }
    }
 
+   [SwaggerOperation("Block the card")]
+   [SwaggerResponse(StatusCodes.Status200OK, "Operation successful")]
+   [SwaggerResponse(StatusCodes.Status400BadRequest, "Schema validation error")]
+   [SwaggerResponse(StatusCodes.Status404NotFound, "User not found")]
    [HttpPost("Card/Block")]
    public async Task<ActionResult> BlockCard(CardIdentifier cardIdentifier) {
       try {
@@ -168,6 +200,10 @@ public class AccountController(
       }
    }
 
+   [SwaggerOperation("Unblock the card")]
+   [SwaggerResponse(StatusCodes.Status200OK, "Operation successful")]
+   [SwaggerResponse(StatusCodes.Status400BadRequest, "Schema validation error")]
+   [SwaggerResponse(StatusCodes.Status404NotFound, "User not found")]
    [HttpPost("Card/Unblock")]
    public async Task<ActionResult> UnblockCard(CardIdentifier cardIdentifier) {
       try {
@@ -189,7 +225,9 @@ public class AccountController(
          return await UnblockCard(cardIdentifier);
       }
    }
-   
+
+   [SwaggerOperation("Get a lobby WebSocket endpoint")]
+   [SwaggerResponse(StatusCodes.Status200OK, "The WebSocket endpoint", typeof(string))]
    [HttpGet("Lobby")]
    public async Task<ActionResult<string>> AccountLobby() {
       ServiceWrapper<AccountServiceClient> service = await loadBalancer.GetServiceAsync();

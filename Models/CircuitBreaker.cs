@@ -17,7 +17,7 @@ public class CircuitBreaker<TService>(
    private readonly bool _removeOnOpen =
       bool.Parse(Environment.GetEnvironmentVariable("CIRCUIT_BREAKER_REMOVE_ON_OPEN")!);
 
-   private const int FailureThreshold = 3;
+   private const int MaxFailuresAllowed = 3;
    private readonly TimeSpan _retryDelay = TimeSpan.FromSeconds(3);
    private readonly TimeSpan _timeoutDelay = TimeSpan.FromSeconds(5);
    private readonly TimeSpan _openTimeout = TimeSpan.FromSeconds(30);
@@ -29,6 +29,10 @@ public class CircuitBreaker<TService>(
    public async Task<TResult> Execute<TResult>(Func<CancellationToken, Task<TResult>> action) {
       var actionCts = new CancellationTokenSource();
       var timeoutCts = new CancellationTokenSource();
+
+      // if (DateTime.Now - _lastFailureTime >= _timeoutDelay * 3.5) {
+      //    _failureCount = Math.Max(_failureCount + 1, MaxFailuresAllowed);
+      // }
 
       try {
          Task<TResult> resultTask = action(actionCts.Token);
@@ -59,6 +63,8 @@ public class CircuitBreaker<TService>(
          }
 
          await Task.Delay(_retryDelay);
+         // throw new CircuitOpenException(string.Empty);
+
          return await Execute<TResult>(action);
       }
       finally {
@@ -75,11 +81,11 @@ public class CircuitBreaker<TService>(
    }
 
    private void ExecuteFailure() {
-      Log.Error($"Execute failure for {service.InstanceDto}, {FailureThreshold - _failureCount} retries remaining");
+      Log.Error($"Execute failure for {service.InstanceDto}, {MaxFailuresAllowed - _failureCount} retries remaining");
       _failureCount++;
       _lastFailureTime = DateTime.Now;
 
-      if (_failureCount >= FailureThreshold) {
+      if (_failureCount >= MaxFailuresAllowed) {
          Log.Error($"Circuit opened for {service.InstanceDto}");
          _state = CircuitState.Open;
       }
@@ -97,7 +103,7 @@ public class CircuitBreaker<TService>(
       if (_state == CircuitState.Open && now - _lastFailureTime >= _openTimeout) {
          _state = CircuitState.HalfOpen;
          Log.Logger.Information($"Circuit breaker is half-opened for {service.InstanceDto}");
-         _failureCount = FailureThreshold - 1;
+         _failureCount = MaxFailuresAllowed - 1;
       }
 
       return _state != CircuitState.Open;

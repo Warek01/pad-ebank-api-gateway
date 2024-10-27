@@ -4,16 +4,23 @@ using Gateway.Helpers;
 using Gateway.Models;
 using Gateway.Services;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Gateway.Controllers;
 
 [ApiController]
 [ApiVersion(1)]
 [Route("/Api/v{v:apiVersion}/[controller]")]
+[SwaggerResponse(StatusCodes.Status429TooManyRequests)]
+[SwaggerResponse(StatusCodes.Status500InternalServerError)]
+[SwaggerTag("Account resource (bound to Account microservice)")]
 public class TransactionController(
    TransactionServiceLoadBalancer loadBalancer,
    ILogger<TransactionController> logger
 ) : ControllerBase {
+   [SwaggerOperation(Summary = "Transfer money from one account to another")]
+   [SwaggerResponse(StatusCodes.Status200OK, "Transfer completed successfully.", typeof(TransferResult))]
+   [SwaggerResponse(StatusCodes.Status400BadRequest, "Invalid transfer data.")]
    [HttpPost("Currency/Transfer")]
    public async Task<ActionResult<TransferResult>> TransferCurrency(TransferData data) {
       try {
@@ -36,6 +43,9 @@ public class TransactionController(
       }
    }
 
+   [SwaggerOperation(Summary = "Deposit money into a card")]
+   [SwaggerResponse(StatusCodes.Status200OK, "Deposit completed successfully.", typeof(DepositResult))]
+   [SwaggerResponse(StatusCodes.Status400BadRequest, "Invalid deposit data.")]
    [HttpPost("Currency/Deposit")]
    public async Task<ActionResult<DepositResult>> DepositCurrency(DepositData data) {
       try {
@@ -59,6 +69,9 @@ public class TransactionController(
       }
    }
 
+   [SwaggerOperation(Summary = "Withdraw money from a card")]
+   [SwaggerResponse(StatusCodes.Status200OK, "Withdrawal completed successfully.", typeof(WithdrawResult))]
+   [SwaggerResponse(StatusCodes.Status400BadRequest, "Invalid withdrawal data.")]
    [HttpPost("Currency/Withdraw")]
    public async Task<ActionResult<WithdrawResult>> WithdrawCurrency(WithdrawData data) {
       try {
@@ -82,6 +95,10 @@ public class TransactionController(
       }
    }
 
+   [SwaggerOperation(Summary = "Retrieve the transaction history for a specified period")]
+   [SwaggerResponse(StatusCodes.Status200OK, "Transaction history retrieved successfully.",
+      typeof(TransactionsHistory))]
+   [SwaggerResponse(StatusCodes.Status400BadRequest, "Invalid history request data.")]
    [HttpPost("History")]
    public async Task<ActionResult<TransactionsHistory>> GetHistory(GetHistoryOptions options) {
       try {
@@ -105,6 +122,9 @@ public class TransactionController(
       }
    }
 
+   [SwaggerOperation(Summary = "Cancel or revert a transaction")]
+   [SwaggerResponse(StatusCodes.Status200OK, "Transaction canceled successfully.", typeof(CancelTransactionResult))]
+   [SwaggerResponse(StatusCodes.Status400BadRequest, "Invalid cancellation request data.")]
    [HttpPost("Cancel")]
    public async Task<ActionResult<CancelTransactionResult>> CancelTransaction(CancelTransactionOptions options) {
       try {
