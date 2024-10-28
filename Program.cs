@@ -19,6 +19,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options => {
    options.SwaggerDoc("v1", new OpenApiInfo {
       Title = "PAD API Gateway",
+      Description = "Gateway microservice",
       Version = "v1",
    });
    options.EnableAnnotations();
@@ -46,8 +47,14 @@ SetupRedis();
 WebApplication app = builder.Build();
 
 app.UseSerilogRequestLogging();
-app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwagger(options => {
+   options.RouteTemplate = "Api/Docs/{documentName}/swagger.json";
+});
+app.UseSwaggerUI(options => {
+   options.SwaggerEndpoint("/Api/Docs/v1/swagger.json", "Gateway v1");
+   options.DocumentTitle = "Gateway docs";
+   options.RoutePrefix = "Api/Docs";
+});
 app.UseAuthorization();
 app.UseDefaultFiles();
 app.UseStaticFiles();
@@ -69,8 +76,6 @@ void Run() {
 
 void LoadServices() {
    builder.Services.AddSingleton<ServiceDiscoveryService>();
-   builder.Services.AddSingleton<AccountServiceLoadBalancer>();
-   builder.Services.AddSingleton<TransactionServiceLoadBalancer>();
 }
 
 void SetupRedis() {

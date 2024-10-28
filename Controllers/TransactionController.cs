@@ -15,7 +15,7 @@ namespace Gateway.Controllers;
 [SwaggerResponse(StatusCodes.Status500InternalServerError)]
 [SwaggerTag("Account resource (bound to Account microservice)")]
 public class TransactionController(
-   TransactionServiceLoadBalancer loadBalancer,
+   ServiceDiscoveryService serviceDiscoveryService,
    ILogger<TransactionController> logger
 ) : ControllerBase {
    [SwaggerOperation(Summary = "Transfer money from one account to another")]
@@ -24,7 +24,7 @@ public class TransactionController(
    [HttpPost("Currency/Transfer")]
    public async Task<ActionResult<TransferResult>> TransferCurrency(TransferData data) {
       try {
-         ServiceWrapper<TransactionServiceClient> service = await loadBalancer.GetServiceAsync();
+         ServiceWrapper<TransactionServiceClient> service = await GetServiceAsync();
 
          logger.LogInformation($"[{nameof(TransferCurrency)}] Load balancer gave {service.InstanceDto}");
 
@@ -49,7 +49,7 @@ public class TransactionController(
    [HttpPost("Currency/Deposit")]
    public async Task<ActionResult<DepositResult>> DepositCurrency(DepositData data) {
       try {
-         ServiceWrapper<TransactionServiceClient> service = await loadBalancer.GetServiceAsync();
+         ServiceWrapper<TransactionServiceClient> service = await GetServiceAsync();
 
          logger.LogInformation($"[{nameof(DepositCurrency)}] Load balancer gave {service.InstanceDto}");
 
@@ -75,7 +75,7 @@ public class TransactionController(
    [HttpPost("Currency/Withdraw")]
    public async Task<ActionResult<WithdrawResult>> WithdrawCurrency(WithdrawData data) {
       try {
-         ServiceWrapper<TransactionServiceClient> service = await loadBalancer.GetServiceAsync();
+         ServiceWrapper<TransactionServiceClient> service = await GetServiceAsync();
 
          logger.LogInformation($"[{nameof(WithdrawCurrency)}] Load balancer gave {service.InstanceDto}");
 
@@ -102,7 +102,7 @@ public class TransactionController(
    [HttpPost("History")]
    public async Task<ActionResult<TransactionsHistory>> GetHistory(GetHistoryOptions options) {
       try {
-         ServiceWrapper<TransactionServiceClient> service = await loadBalancer.GetServiceAsync();
+         ServiceWrapper<TransactionServiceClient> service = await GetServiceAsync();
 
          logger.LogInformation($"[{nameof(GetHistory)}] Load balancer gave {service.InstanceDto}");
 
@@ -128,7 +128,7 @@ public class TransactionController(
    [HttpPost("Cancel")]
    public async Task<ActionResult<CancelTransactionResult>> CancelTransaction(CancelTransactionOptions options) {
       try {
-         ServiceWrapper<TransactionServiceClient> service = await loadBalancer.GetServiceAsync();
+         ServiceWrapper<TransactionServiceClient> service = await GetServiceAsync();
 
          logger.LogInformation($"[{nameof(CancelTransaction)}] Load balancer gave {service.InstanceDto}");
 
@@ -146,5 +146,9 @@ public class TransactionController(
       catch (CircuitOpenException) {
          return await CancelTransaction(options);
       }
+   }
+   
+   private Task<ServiceWrapper<TransactionServiceClient>> GetServiceAsync() {
+      return ServiceWrapper<TransactionServiceClient>.GetService(serviceDiscoveryService, ServiceNames.TransactionService);
    }
 }

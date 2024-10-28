@@ -1,4 +1,5 @@
 using Gateway.Exceptions;
+using Gateway.Services;
 using Grpc.Core;
 using Serilog;
 
@@ -6,7 +7,7 @@ namespace Gateway.Models;
 
 public class CircuitBreaker<TService>(
    ServiceWrapper<TService> service,
-   LoadBalancer<TService> loadBalancer
+   ServiceDiscoveryService serviceDiscoveryService
 ) where TService : ClientBase {
    private enum CircuitState {
       Closed,
@@ -29,10 +30,6 @@ public class CircuitBreaker<TService>(
    public async Task<TResult> Execute<TResult>(Func<CancellationToken, Task<TResult>> action) {
       var actionCts = new CancellationTokenSource();
       var timeoutCts = new CancellationTokenSource();
-
-      // if (DateTime.Now - _lastFailureTime >= _timeoutDelay * 3.5) {
-      //    _failureCount = Math.Max(_failureCount + 1, MaxFailuresAllowed);
-      // }
 
       try {
          Task<TResult> resultTask = action(actionCts.Token);
@@ -63,7 +60,6 @@ public class CircuitBreaker<TService>(
          }
 
          await Task.Delay(_retryDelay);
-         // throw new CircuitOpenException(string.Empty);
 
          return await Execute<TResult>(action);
       }
@@ -92,7 +88,7 @@ public class CircuitBreaker<TService>(
    }
 
    private async Task RemoveInstance() {
-      await loadBalancer.RemoveServiceAsync(service);
+      await serviceDiscoveryService.RemoveInstance(service.InstanceDto.Host);
       Log.Logger.Information($"Removed service instance {service.InstanceDto}");
    }
 

@@ -15,7 +15,7 @@ namespace Gateway.Controllers;
 [SwaggerResponse(StatusCodes.Status500InternalServerError)]
 [SwaggerTag("Account resource (bound to Account microservice)")]
 public class AccountController(
-   AccountServiceLoadBalancer loadBalancer,
+   ServiceDiscoveryService serviceDiscoveryService,
    ILogger<AccountController> logger
 ) : ControllerBase {
    [SwaggerOperation("Register a user", "Register a user with the register credentials")]
@@ -25,7 +25,7 @@ public class AccountController(
    [HttpPost("Register")]
    public async Task<ActionResult> Register(RegisterCredentials credentials) {
       try {
-         ServiceWrapper<AccountServiceClient> service = await loadBalancer.GetServiceAsync();
+         ServiceWrapper<AccountServiceClient> service = await GetServiceAsync();
 
          logger.LogInformation($"[{nameof(Register)}] Load balancer gave {service.InstanceDto}");
 
@@ -51,7 +51,7 @@ public class AccountController(
    [HttpPost("Login")]
    public async Task<ActionResult> Login(LoginCredentials credentials) {
       try {
-         ServiceWrapper<AccountServiceClient> service = await loadBalancer.GetServiceAsync();
+         ServiceWrapper<AccountServiceClient> service = await GetServiceAsync();
 
          logger.LogInformation($"[{nameof(Login)}] Load balancer gave {service.InstanceDto}");
 
@@ -77,7 +77,7 @@ public class AccountController(
    [HttpPost("Profile")]
    public async Task<ActionResult> GetProfile(GetProfileOptions options) {
       try {
-         ServiceWrapper<AccountServiceClient> service = await loadBalancer.GetServiceAsync();
+         ServiceWrapper<AccountServiceClient> service = await GetServiceAsync();
 
          logger.LogInformation($"[{nameof(GetProfile)}] Load balancer gave {service.InstanceDto}");
 
@@ -103,7 +103,7 @@ public class AccountController(
    [HttpPost("Currency/Add")]
    public async Task<ActionResult> AddCurrency(AddCurrencyOptions options) {
       try {
-         ServiceWrapper<AccountServiceClient> service = await loadBalancer.GetServiceAsync();
+         ServiceWrapper<AccountServiceClient> service = await GetServiceAsync();
 
          logger.LogInformation($"[{nameof(AddCurrency)}] Load balancer gave {service.InstanceDto}");
 
@@ -129,7 +129,7 @@ public class AccountController(
    [HttpPost("Currency/Change")]
    public async Task<ActionResult> ChangeCurrency(ChangeCurrencyOptions options) {
       try {
-         ServiceWrapper<AccountServiceClient> service = await loadBalancer.GetServiceAsync();
+         ServiceWrapper<AccountServiceClient> service = await GetServiceAsync();
 
          logger.LogInformation($"[{nameof(ChangeCurrency)}] Load balancer gave {service.InstanceDto}");
 
@@ -155,7 +155,7 @@ public class AccountController(
    [HttpPost("Transaction/Validate")]
    public async Task<ActionResult> CanPerformTransaction(TransactionData data) {
       try {
-         ServiceWrapper<AccountServiceClient> service = await loadBalancer.GetServiceAsync();
+         ServiceWrapper<AccountServiceClient> service = await GetServiceAsync();
 
          logger.LogInformation($"[{nameof(CanPerformTransaction)}] Load balancer gave {service.InstanceDto}");
 
@@ -181,7 +181,7 @@ public class AccountController(
    [HttpPost("Card/Block")]
    public async Task<ActionResult> BlockCard(CardIdentifier cardIdentifier) {
       try {
-         ServiceWrapper<AccountServiceClient> service = await loadBalancer.GetServiceAsync();
+         ServiceWrapper<AccountServiceClient> service = await GetServiceAsync();
 
          logger.LogInformation($"[{nameof(BlockCard)}] Load balancer gave {service.InstanceDto}");
 
@@ -207,7 +207,7 @@ public class AccountController(
    [HttpPost("Card/Unblock")]
    public async Task<ActionResult> UnblockCard(CardIdentifier cardIdentifier) {
       try {
-         ServiceWrapper<AccountServiceClient> service = await loadBalancer.GetServiceAsync();
+         ServiceWrapper<AccountServiceClient> service = await GetServiceAsync();
 
          logger.LogInformation($"[{nameof(UnblockCard)}] Load balancer gave {service.InstanceDto}");
 
@@ -230,7 +230,11 @@ public class AccountController(
    [SwaggerResponse(StatusCodes.Status200OK, "The WebSocket endpoint", typeof(string))]
    [HttpGet("Lobby")]
    public async Task<ActionResult<string>> AccountLobby() {
-      ServiceWrapper<AccountServiceClient> service = await loadBalancer.GetServiceAsync();
+      ServiceWrapper<AccountServiceClient> service = await GetServiceAsync();
       return $"ws://{service.InstanceDto.Host}:3200/account";
+   }
+
+   private Task<ServiceWrapper<AccountServiceClient>> GetServiceAsync() {
+      return ServiceWrapper<AccountServiceClient>.GetService(serviceDiscoveryService, ServiceNames.AccountService);
    }
 }
