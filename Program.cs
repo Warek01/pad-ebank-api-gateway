@@ -2,6 +2,7 @@ using Asp.Versioning;
 using Gateway.ExceptionHandlers;
 using Gateway.Services;
 using Microsoft.OpenApi.Models;
+using Prometheus;
 using Serilog;
 using StackExchange.Redis;
 
@@ -27,6 +28,7 @@ builder.Services.AddSwaggerGen(options => {
    var filePath = Path.Combine(AppContext.BaseDirectory, "Gateway.xml");
    options.IncludeXmlComments(filePath);
 });
+builder.Services.UseHttpClientMetrics();
 builder.Services.AddHttpClient();
 builder.Services.AddApiVersioning(options => {
    options.ReportApiVersions = true;
@@ -55,6 +57,8 @@ app.UseSwaggerUI(options => {
    options.DocumentTitle = "Gateway docs";
    options.RoutePrefix = "Api/Docs";
 });
+app.UseMetricServer();
+app.UseHttpMetrics();
 app.UseAuthorization();
 app.UseDefaultFiles();
 app.UseStaticFiles();
