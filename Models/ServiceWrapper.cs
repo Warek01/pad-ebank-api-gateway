@@ -1,4 +1,3 @@
-using Gateway.Dtos.Request;
 using Gateway.Exceptions;
 using Gateway.Services;
 using Grpc.Core;
@@ -14,18 +13,18 @@ public class ServiceWrapper<T> : IAsyncDisposable where T : ClientBase {
    public readonly T Client;
    public readonly GrpcChannel Channel;
    public readonly CircuitBreaker<T> CircuitBreaker;
-   public readonly ServiceInstanceDto InstanceDto;
+   public readonly RegistryEntry SdInstance;
 
-   public ServiceWrapper(ServiceInstanceDto instance, ServiceDiscoveryService serviceDiscoveryService) {
-      Console.WriteLine(instance);
-      Channel = GrpcChannel.ForAddress(instance.Url());
+   public ServiceWrapper(RegistryEntry sdInstance, ServiceDiscoveryService serviceDiscoveryService) {
+      Console.WriteLine(sdInstance);
+      Channel = GrpcChannel.ForAddress(sdInstance.GrpcUri!);
       Client = (T)Activator.CreateInstance(typeof(T), Channel)!;
       CircuitBreaker = new CircuitBreaker<T>(this, serviceDiscoveryService);
-      InstanceDto = instance;
+      SdInstance = sdInstance;
    }
 
    public static async Task<ServiceWrapper<T>> GetService(ServiceDiscoveryService serviceDiscoveryService, string serviceName) {
-      ServiceInstanceDto? dto = await serviceDiscoveryService.GetInstance(serviceName);
+      RegistryEntry? dto = await serviceDiscoveryService.GetInstance(serviceName);
 
       if (dto is null) {
          throw new ServiceUnavailableException($"{serviceName} is unavailable");

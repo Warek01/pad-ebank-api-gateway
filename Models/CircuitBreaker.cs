@@ -77,19 +77,19 @@ public class CircuitBreaker<TService>(
    }
 
    private void ExecuteFailure() {
-      Log.Error($"Execute failure for {service.InstanceDto}, {MaxFailuresAllowed - _failureCount} retries remaining");
+      Log.Error($"Execute failure for {service.SdInstance}, {MaxFailuresAllowed - _failureCount} retries remaining");
       _failureCount++;
       _lastFailureTime = DateTime.Now;
 
       if (_failureCount >= MaxFailuresAllowed) {
-         Log.Error($"Circuit opened for {service.InstanceDto}");
+         Log.Error($"Circuit opened for {service.SdInstance}");
          _state = CircuitState.Open;
       }
    }
 
    private async Task RemoveInstance() {
-      await serviceDiscoveryService.RemoveInstance(service.InstanceDto.Host);
-      Log.Logger.Information($"Removed service instance {service.InstanceDto}");
+      await serviceDiscoveryService.RemoveInstance(service.SdInstance.Id);
+      Log.Logger.Information($"Removed service instance {service.SdInstance}");
    }
 
    public bool CanPerform() {
@@ -98,7 +98,7 @@ public class CircuitBreaker<TService>(
       // half-open after _closedTimeout if opened
       if (_state == CircuitState.Open && now - _lastFailureTime >= _openTimeout) {
          _state = CircuitState.HalfOpen;
-         Log.Logger.Information($"Circuit breaker is half-opened for {service.InstanceDto}");
+         Log.Logger.Information($"Circuit breaker is half-opened for {service.SdInstance}");
          _failureCount = MaxFailuresAllowed - 1;
       }
 

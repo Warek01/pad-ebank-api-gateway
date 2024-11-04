@@ -27,7 +27,7 @@ public class AccountController(
       try {
          ServiceWrapper<AccountServiceClient> service = await GetServiceAsync();
 
-         logger.LogInformation($"[{nameof(Register)}] Load balancer gave {service.InstanceDto}");
+         logger.LogInformation($"[{nameof(Register)}] Load balancer gave {service.SdInstance}");
 
          AuthResult result = await service.CircuitBreaker.Execute<AuthResult>(
             async (cts) => await service.Client.RegisterAsync(credentials, cancellationToken: cts)
@@ -53,7 +53,7 @@ public class AccountController(
       try {
          ServiceWrapper<AccountServiceClient> service = await GetServiceAsync();
 
-         logger.LogInformation($"[{nameof(Login)}] Load balancer gave {service.InstanceDto}");
+         logger.LogInformation($"[{nameof(Login)}] Load balancer gave {service.SdInstance}");
 
          AuthResult result = await service.CircuitBreaker.Execute<AuthResult>(
             async (cts) => await service.Client.LoginAsync(credentials, cancellationToken: cts)
@@ -79,7 +79,7 @@ public class AccountController(
       try {
          ServiceWrapper<AccountServiceClient> service = await GetServiceAsync();
 
-         logger.LogInformation($"[{nameof(GetProfile)}] Load balancer gave {service.InstanceDto}");
+         logger.LogInformation($"[{nameof(GetProfile)}] Load balancer gave {service.SdInstance}");
 
          GetProfileResult result = await service.CircuitBreaker.Execute<GetProfileResult>(
             async (cts) => await service.Client.GetProfileAsync(options, cancellationToken: cts)
@@ -105,7 +105,7 @@ public class AccountController(
       try {
          ServiceWrapper<AccountServiceClient> service = await GetServiceAsync();
 
-         logger.LogInformation($"[{nameof(AddCurrency)}] Load balancer gave {service.InstanceDto}");
+         logger.LogInformation($"[{nameof(AddCurrency)}] Load balancer gave {service.SdInstance}");
 
          AddCurrencyResult? result = await service.CircuitBreaker.Execute<AddCurrencyResult>(
             async (cts) => await service.Client.AddCurrencyAsync(options, cancellationToken: cts)
@@ -131,7 +131,7 @@ public class AccountController(
       try {
          ServiceWrapper<AccountServiceClient> service = await GetServiceAsync();
 
-         logger.LogInformation($"[{nameof(ChangeCurrency)}] Load balancer gave {service.InstanceDto}");
+         logger.LogInformation($"[{nameof(ChangeCurrency)}] Load balancer gave {service.SdInstance}");
 
          ChangeCurrencyResult? result = await service.CircuitBreaker.Execute<ChangeCurrencyResult>(
             async (cts) => await service.Client.ChangeCurrencyAsync(options, cancellationToken: cts)
@@ -157,7 +157,7 @@ public class AccountController(
       try {
          ServiceWrapper<AccountServiceClient> service = await GetServiceAsync();
 
-         logger.LogInformation($"[{nameof(CanPerformTransaction)}] Load balancer gave {service.InstanceDto}");
+         logger.LogInformation($"[{nameof(CanPerformTransaction)}] Load balancer gave {service.SdInstance}");
 
          CanPerformTransactionResult? result = await service.CircuitBreaker.Execute<CanPerformTransactionResult>(
             async (cts) => await service.Client.CanPerformTransactionAsync(data, cancellationToken: cts)
@@ -183,7 +183,7 @@ public class AccountController(
       try {
          ServiceWrapper<AccountServiceClient> service = await GetServiceAsync();
 
-         logger.LogInformation($"[{nameof(BlockCard)}] Load balancer gave {service.InstanceDto}");
+         logger.LogInformation($"[{nameof(BlockCard)}] Load balancer gave {service.SdInstance}");
 
          BlockCardResult? result = await service.CircuitBreaker.Execute<BlockCardResult>(
             async (cts) => await service.Client.BlockCardAsync(cardIdentifier, cancellationToken: cts)
@@ -209,7 +209,7 @@ public class AccountController(
       try {
          ServiceWrapper<AccountServiceClient> service = await GetServiceAsync();
 
-         logger.LogInformation($"[{nameof(UnblockCard)}] Load balancer gave {service.InstanceDto}");
+         logger.LogInformation($"[{nameof(UnblockCard)}] Load balancer gave {service.SdInstance}");
 
          UnblockCardResult? result = await service.CircuitBreaker.Execute<UnblockCardResult>(
             async (cts) => await service.Client.UnblockCardAsync(cardIdentifier, cancellationToken: cts)
@@ -231,7 +231,7 @@ public class AccountController(
    [HttpGet("Lobby")]
    public async Task<ActionResult<string>> AccountLobby() {
       ServiceWrapper<AccountServiceClient> service = await GetServiceAsync();
-      return $"ws://{service.InstanceDto.Host}:3200/account";
+      return $"ws://{service.SdInstance.HttpUri!.Host}:3200/account";
    }
 
    private Task<ServiceWrapper<AccountServiceClient>> GetServiceAsync() {

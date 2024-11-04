@@ -26,7 +26,7 @@ public class TransactionController(
       try {
          ServiceWrapper<TransactionServiceClient> service = await GetServiceAsync();
 
-         logger.LogInformation($"[{nameof(TransferCurrency)}] Load balancer gave {service.InstanceDto}");
+         logger.LogInformation($"[{nameof(TransferCurrency)}] Load balancer gave {service.SdInstance}");
 
          TransferResult result = await service.CircuitBreaker.Execute<TransferResult>(
             async (cts) => await service.Client.TransferCurrencyAsync(data, cancellationToken: cts)
@@ -51,7 +51,7 @@ public class TransactionController(
       try {
          ServiceWrapper<TransactionServiceClient> service = await GetServiceAsync();
 
-         logger.LogInformation($"[{nameof(DepositCurrency)}] Load balancer gave {service.InstanceDto}");
+         logger.LogInformation($"[{nameof(DepositCurrency)}] Load balancer gave {service.SdInstance}");
 
          DepositResult result = await service.CircuitBreaker.Execute<DepositResult>(
             async (cts) => await service.Client.DepositCurrencyAsync(data, cancellationToken: cts)
@@ -77,7 +77,7 @@ public class TransactionController(
       try {
          ServiceWrapper<TransactionServiceClient> service = await GetServiceAsync();
 
-         logger.LogInformation($"[{nameof(WithdrawCurrency)}] Load balancer gave {service.InstanceDto}");
+         logger.LogInformation($"[{nameof(WithdrawCurrency)}] Load balancer gave {service.SdInstance}");
 
          WithdrawResult result = await service.CircuitBreaker.Execute<WithdrawResult>(
             async (cts) => await service.Client.WithdrawCurrencyAsync(data, cancellationToken: cts)
@@ -104,7 +104,7 @@ public class TransactionController(
       try {
          ServiceWrapper<TransactionServiceClient> service = await GetServiceAsync();
 
-         logger.LogInformation($"[{nameof(GetHistory)}] Load balancer gave {service.InstanceDto}");
+         logger.LogInformation($"[{nameof(GetHistory)}] Load balancer gave {service.SdInstance}");
 
          TransactionsHistory result = await service.CircuitBreaker.Execute<TransactionsHistory>(
             async (cts) => await service.Client.GetHistoryAsync(options, cancellationToken: cts)
@@ -130,7 +130,7 @@ public class TransactionController(
       try {
          ServiceWrapper<TransactionServiceClient> service = await GetServiceAsync();
 
-         logger.LogInformation($"[{nameof(CancelTransaction)}] Load balancer gave {service.InstanceDto}");
+         logger.LogInformation($"[{nameof(CancelTransaction)}] Load balancer gave {service.SdInstance}");
 
          CancelTransactionResult result = await service.CircuitBreaker.Execute<CancelTransactionResult>(
             async (cts) => await service.Client.CancelTransactionAsync(options, cancellationToken: cts)
