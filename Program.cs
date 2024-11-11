@@ -80,6 +80,7 @@ void Run() {
 
 void LoadServices() {
    builder.Services.AddSingleton<ServiceDiscoveryService>();
+   builder.Services.AddScoped<SagaOrchestratorService>();
 }
 
 void SetupRedis() {

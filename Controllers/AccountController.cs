@@ -235,6 +235,6 @@ public class AccountController(
    }
 
    private Task<ServiceWrapper<AccountServiceClient>> GetServiceAsync() {
-      return ServiceWrapper<AccountServiceClient>.GetService(serviceDiscoveryService, ServiceNames.AccountService);
+      return ServiceWrapper<AccountServiceClient>.GetServiceAsync(serviceDiscoveryService, ServiceNames.AccountService);
    }
 }

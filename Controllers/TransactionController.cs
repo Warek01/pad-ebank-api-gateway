@@ -15,84 +15,31 @@ namespace Gateway.Controllers;
 [SwaggerResponse(StatusCodes.Status500InternalServerError)]
 [SwaggerTag("Account resource (bound to Account microservice)")]
 public class TransactionController(
-   ServiceDiscoveryService serviceDiscoveryService,
-   ILogger<TransactionController> logger
+   SagaOrchestratorService orchestrator,
+   ServiceDiscoveryService sd
 ) : ControllerBase {
    [SwaggerOperation(Summary = "Transfer money from one account to another")]
-   [SwaggerResponse(StatusCodes.Status200OK, "Transfer completed successfully.", typeof(TransferResult))]
+   [SwaggerResponse(StatusCodes.Status200OK, "Transfer completed successfully.", typeof(Nullable))]
    [SwaggerResponse(StatusCodes.Status400BadRequest, "Invalid transfer data.")]
    [HttpPost("Currency/Transfer")]
-   public async Task<ActionResult<TransferResult>> TransferCurrency(TransferData data) {
-      try {
-         ServiceWrapper<TransactionServiceClient> service = await GetServiceAsync();
-
-         logger.LogInformation($"[{nameof(TransferCurrency)}] Load balancer gave {service.SdInstance}");
-
-         TransferResult result = await service.CircuitBreaker.Execute<TransferResult>(
-            async (cts) => await service.Client.TransferCurrencyAsync(data, cancellationToken: cts)
-         );
-
-         if (result.Error is not null) {
-            return ServiceErrorHelper.ServiceErrorToActionResult(result.Error);
-         }
-
-         return Ok(result);
-      }
-      catch (CircuitOpenException) {
-         return await TransferCurrency(data);
-      }
+   public async Task<ActionResult<ServiceError?>> TransferCurrency(TransferData data) {
+      return await orchestrator.TransferCurrencyAsync(data);
    }
 
    [SwaggerOperation(Summary = "Deposit money into a card")]
-   [SwaggerResponse(StatusCodes.Status200OK, "Deposit completed successfully.", typeof(DepositResult))]
+   [SwaggerResponse(StatusCodes.Status200OK, "Deposit completed successfully.", typeof(Nullable))]
    [SwaggerResponse(StatusCodes.Status400BadRequest, "Invalid deposit data.")]
    [HttpPost("Currency/Deposit")]
-   public async Task<ActionResult<DepositResult>> DepositCurrency(DepositData data) {
-      try {
-         ServiceWrapper<TransactionServiceClient> service = await GetServiceAsync();
-
-         logger.LogInformation($"[{nameof(DepositCurrency)}] Load balancer gave {service.SdInstance}");
-
-         DepositResult result = await service.CircuitBreaker.Execute<DepositResult>(
-            async (cts) => await service.Client.DepositCurrencyAsync(data, cancellationToken: cts)
-         );
-
-         if (result.Error is not null) {
-            return ServiceErrorHelper.ServiceErrorToActionResult(result.Error);
-         }
-
-         return Ok(result);
-      }
-
-      catch (CircuitOpenException) {
-         return await DepositCurrency(data);
-      }
+   public async Task<ActionResult<ServiceError?>> DepositCurrency(DepositData data) {
+      return await orchestrator.DepositCurrencyAsync(data);
    }
 
    [SwaggerOperation(Summary = "Withdraw money from a card")]
-   [SwaggerResponse(StatusCodes.Status200OK, "Withdrawal completed successfully.", typeof(WithdrawResult))]
+   [SwaggerResponse(StatusCodes.Status200OK, "Withdrawal completed successfully.", typeof(Nullable))]
    [SwaggerResponse(StatusCodes.Status400BadRequest, "Invalid withdrawal data.")]
    [HttpPost("Currency/Withdraw")]
-   public async Task<ActionResult<WithdrawResult>> WithdrawCurrency(WithdrawData data) {
-      try {
-         ServiceWrapper<TransactionServiceClient> service = await GetServiceAsync();
-
-         logger.LogInformation($"[{nameof(WithdrawCurrency)}] Load balancer gave {service.SdInstance}");
-
-         WithdrawResult result = await service.CircuitBreaker.Execute<WithdrawResult>(
-            async (cts) => await service.Client.WithdrawCurrencyAsync(data, cancellationToken: cts)
-         );
-
-         if (result.Error is not null) {
-            return ServiceErrorHelper.ServiceErrorToActionResult(result.Error);
-         }
-
-         return Ok(result);
-      }
-
-      catch (CircuitOpenException) {
-         return await WithdrawCurrency(data);
-      }
+   public async Task<ActionResult<ServiceError?>> WithdrawCurrency(WithdrawData data) {
+      return await orchestrator.WithdrawCurrencyAsync(data);
    }
 
    [SwaggerOperation(Summary = "Retrieve the transaction history for a specified period")]
@@ -102,9 +49,7 @@ public class TransactionController(
    [HttpPost("History")]
    public async Task<ActionResult<TransactionsHistory>> GetHistory(GetHistoryOptions options) {
       try {
-         ServiceWrapper<TransactionServiceClient> service = await GetServiceAsync();
-
-         logger.LogInformation($"[{nameof(GetHistory)}] Load balancer gave {service.SdInstance}");
+         var service = await ServiceWrapper<TransactionServiceClient>.GetTransactionServiceAsync(sd);
 
          TransactionsHistory result = await service.CircuitBreaker.Execute<TransactionsHistory>(
             async (cts) => await service.Client.GetHistoryAsync(options, cancellationToken: cts)
@@ -120,35 +65,5 @@ public class TransactionController(
       catch (CircuitOpenException) {
          return await GetHistory(options);
       }
-   }
-
-   [SwaggerOperation(Summary = "Cancel or revert a transaction")]
-   [SwaggerResponse(StatusCodes.Status200OK, "Transaction canceled successfully.", typeof(CancelTransactionResult))]
-   [SwaggerResponse(StatusCodes.Status400BadRequest, "Invalid cancellation request data.")]
-   [HttpPost("Cancel")]
-   public async Task<ActionResult<CancelTransactionResult>> CancelTransaction(CancelTransactionOptions options) {
-      try {
-         ServiceWrapper<TransactionServiceClient> service = await GetServiceAsync();
-
-         logger.LogInformation($"[{nameof(CancelTransaction)}] Load balancer gave {service.SdInstance}");
-
-         CancelTransactionResult result = await service.CircuitBreaker.Execute<CancelTransactionResult>(
-            async (cts) => await service.Client.CancelTransactionAsync(options, cancellationToken: cts)
-         );
-
-         if (result.Error is not null) {
-            return ServiceErrorHelper.ServiceErrorToActionResult(result.Error);
-         }
-
-         return Ok(result);
-      }
-
-      catch (CircuitOpenException) {
-         return await CancelTransaction(options);
-      }
-   }
-   
-   private Task<ServiceWrapper<TransactionServiceClient>> GetServiceAsync() {
-      return ServiceWrapper<TransactionServiceClient>.GetService(serviceDiscoveryService, ServiceNames.TransactionService);
    }
 }
