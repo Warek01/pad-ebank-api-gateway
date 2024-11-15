@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Gateway.Helpers;
 
 public static class ServiceErrorHelper {
-   public static ActionResult ServiceErrorToActionResult(ServiceError error) {
+   public static ActionResult ErrorToActionResult(ServiceError error) {
       ServiceErrorCode code = error.Code;
       string message = error.Message;
 

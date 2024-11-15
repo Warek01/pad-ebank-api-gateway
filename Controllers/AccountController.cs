@@ -15,7 +15,7 @@ namespace Gateway.Controllers;
 [SwaggerResponse(StatusCodes.Status500InternalServerError)]
 [SwaggerTag("Account resource (bound to Account microservice)")]
 public class AccountController(
-   ServiceDiscoveryService serviceDiscoveryService,
+   ServiceDiscoveryService sd,
    ILogger<AccountController> logger
 ) : ControllerBase {
    [SwaggerOperation("Register a user", "Register a user with the register credentials")]
@@ -34,7 +34,7 @@ public class AccountController(
          );
 
          if (result.Error is not null) {
-            return ServiceErrorHelper.ServiceErrorToActionResult(result.Error);
+            return ServiceErrorHelper.ErrorToActionResult(result.Error);
          }
 
          return Ok(result.Credentials);
@@ -60,7 +60,7 @@ public class AccountController(
          );
 
          if (result.Error is not null) {
-            return ServiceErrorHelper.ServiceErrorToActionResult(result.Error);
+            return ServiceErrorHelper.ErrorToActionResult(result.Error);
          }
 
          return Ok(result.Credentials);
@@ -86,7 +86,7 @@ public class AccountController(
          );
 
          if (result.Error is not null) {
-            return ServiceErrorHelper.ServiceErrorToActionResult(result.Error);
+            return ServiceErrorHelper.ErrorToActionResult(result.Error);
          }
 
          return Ok(result.Profile);
@@ -112,7 +112,7 @@ public class AccountController(
          );
 
          if (result.Error is not null) {
-            return ServiceErrorHelper.ServiceErrorToActionResult(result.Error);
+            return ServiceErrorHelper.ErrorToActionResult(result.Error);
          }
 
          return Ok();
@@ -138,7 +138,7 @@ public class AccountController(
          );
 
          if (result.Error is not null) {
-            return ServiceErrorHelper.ServiceErrorToActionResult(result.Error);
+            return ServiceErrorHelper.ErrorToActionResult(result.Error);
          }
 
          return Ok();
@@ -164,7 +164,7 @@ public class AccountController(
          );
 
          if (result.Error is not null) {
-            return ServiceErrorHelper.ServiceErrorToActionResult(result.Error);
+            return ServiceErrorHelper.ErrorToActionResult(result.Error);
          }
 
          return Ok();
@@ -190,7 +190,7 @@ public class AccountController(
          );
 
          if (result.Error is not null) {
-            return ServiceErrorHelper.ServiceErrorToActionResult(result.Error);
+            return ServiceErrorHelper.ErrorToActionResult(result.Error);
          }
 
          return Ok();
@@ -216,7 +216,7 @@ public class AccountController(
          );
 
          if (result.Error is not null) {
-            return ServiceErrorHelper.ServiceErrorToActionResult(result.Error);
+            return ServiceErrorHelper.ErrorToActionResult(result.Error);
          }
 
          return Ok();
@@ -235,6 +235,6 @@ public class AccountController(
    }
 
    private Task<ServiceWrapper<AccountServiceClient>> GetServiceAsync() {
-      return ServiceWrapper<AccountServiceClient>.GetServiceAsync(serviceDiscoveryService, ServiceNames.AccountService);
+      return ServiceWrapper<AccountServiceClient>.GetServiceAsync(sd, ServiceNames.AccountService);
    }
 }

@@ -49,9 +49,7 @@ SetupRedis();
 WebApplication app = builder.Build();
 
 app.UseSerilogRequestLogging();
-app.UseSwagger(options => {
-   options.RouteTemplate = "Api/Docs/{documentName}/swagger.json";
-});
+app.UseSwagger(options => { options.RouteTemplate = "Api/Docs/{documentName}/swagger.json"; });
 app.UseSwaggerUI(options => {
    options.SwaggerEndpoint("/Api/Docs/v1/swagger.json", "Gateway v1");
    options.DocumentTitle = "Gateway docs";
@@ -79,20 +77,22 @@ void Run() {
 }
 
 void LoadServices() {
-   builder.Services.AddSingleton<ServiceDiscoveryService>();
+   builder.Services.AddScoped<ServiceDiscoveryService>();
    builder.Services.AddScoped<SagaOrchestratorService>();
+   builder.Services.AddScoped<CacheService>();
 }
 
 void SetupRedis() {
-   string host = Environment.GetEnvironmentVariable("REDIS_HOST")!;
-   string port = Environment.GetEnvironmentVariable("REDIS_PORT")!;
    int db = int.Parse(Environment.GetEnvironmentVariable("REDIS_DB")!);
    string user = Environment.GetEnvironmentVariable("REDIS_USER")!;
    string password = Environment.GetEnvironmentVariable("REDIS_PASSWORD")!;
 
    var options = new ConfigurationOptions {
       Protocol = RedisProtocol.Resp3,
-      EndPoints = { $"{host}:{port}" },
+      EndPoints = {
+         "redis-node-1:6379", "redis-node-2:6379", "redis-node-3:6379", "redis-node-4:6379", "redis-node-5:6379",
+         "redis-node-6:6379"
+      },
       Password = password,
       User = user,
       DefaultDatabase = db,
