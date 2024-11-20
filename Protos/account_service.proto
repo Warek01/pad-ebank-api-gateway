@@ -38,6 +38,7 @@ message RegisterCredentials {
   string email = 1;
   string password = 2;
   string full_name = 3;
+  int64 created_at = 4;
 }
 
 message GetProfileOptions {
@@ -47,6 +48,7 @@ message GetProfileOptions {
 message Profile {
   string email = 1;
   string full_name = 2;
+  int64 created_at = 4;
 }
 
 message GetProfileResult {
